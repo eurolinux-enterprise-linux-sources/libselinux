@@ -5,7 +5,7 @@
 Summary: SELinux library and simple utilities
 Name: libselinux
 Version: 2.0.94
-Release: 5.3%{?dist}
+Release: 5.3%{?dist}.1
 License: Public Domain
 Group: System Environment/Libraries
 Source: http://www.nsa.gov/research/selinux/%{name}-%{version}.tgz
@@ -18,6 +18,7 @@ Patch5: libselinux-2.0.94_realpath.patch
 Patch6: libselinux-2.0.94_user.patch
 Patch7: libselinux-2.0.94_checkgroup.patch
 Patch8: libselinux-2.0.94_eintr.patch
+Patch9: libselinux-2.0.94_substitutions.patch
 URL: http://www.selinuxproject.org
 
 BuildRequires: python-devel ruby-devel ruby libsepol-static >= %{libsepolver} swig
@@ -96,6 +97,7 @@ needed for developing SELinux applications.
 %patch6 -p1 -b .user
 %patch7 -p2 -b .checkgroup
 %patch8 -p1 -b .eintr
+%patch9 -p1 -b .substitutions
 
 %build
 make clean
@@ -182,6 +184,14 @@ exit 0
 %{ruby_sitearch}/selinux.so
 
 %changelog
+* Tue May 7 2013 Miroslav Grepl <mgrepl@redhat.com> - 2..0.94-5.3.el6_4.1
+- Fix patch that Handles substitutions for /
+Resolves:#956983
+
+* Thu May 1 2013 Miroslav Grepl <mgrepl@redhat.com> - 2..0.94-5.3.el6_4
+- Handle substitutions for /
+Resolves:#956983
+
 * Fri Feb 3 2012 Dan Walsh <dwalsh@redhat.com> - 2..0.94-5.3
 - avc_netlink_recieve should continue to poll if it receinves an EINTR rather 
 Resolves: #717147
