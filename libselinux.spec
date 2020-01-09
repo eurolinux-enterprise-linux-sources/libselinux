@@ -5,12 +5,12 @@
 Summary: SELinux library and simple utilities
 Name: libselinux
 Version: 2.0.94
-Release: 5.8%{?dist}
+Release: 7%{?dist}
 License: Public Domain
 Group: System Environment/Libraries
 Source: http://www.nsa.gov/research/selinux/%{name}-%{version}.tgz
 Patch: libselinux-rhat.patch
-Patch1: libselinux-ruby.patch
+# Patch1: libselinux-ruby.patch
 Patch2: libselinux-2.0.94_leak.patch
 Patch3: libselinux-2.0.94_thread.patch
 Patch4: libselinux-2.0.94_init.patch
@@ -24,6 +24,10 @@ Patch11: libselinux-2.0.94_rhel6.6.patch
 Patch12: libselinux-2.0.94-1091857.patch
 Patch13: libselinux-2.0.94-1025507.patch
 Patch14: libselinux-2.0.94-753675.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=680950
+Patch15: libselinux-2.0.94-680950.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=1309730
+Patch16: libselinux-2.0.94-label_file-fix-memory-leak.patch
 URL: http://www.selinuxproject.org
 
 BuildRequires: python-devel ruby-devel ruby libsepol-static >= %{libsepolver} swig
@@ -108,6 +112,9 @@ needed for developing SELinux applications.
 %patch12 -p2 -b .1091857
 %patch13 -p2 -b .1025507
 %patch14 -p2 -b .753675
+%patch15 -p1 -b .680950
+%patch16 -p1 -b .1309730
+
 %build
 make clean
 make LIBDIR="%{_libdir}" CFLAGS="-g %{optflags}" %{?_smp_mflags} swigify
@@ -193,6 +200,12 @@ exit 0
 %{ruby_sitearch}/selinux.so
 
 %changelog
+* Mon Mar 07 2016 Petr Lautrbach <plautrba@redhat.com> 2.0.94-7
+- label_file: fix memory leak in init() (#1309730)
+
+* Wed Dec 16 2015 Petr Lautrbach <plautrba@redhat.com> - 2.0.94-6
+- matchpathcon: add -P <policy_root_path> (#680950)
+
 * Mon Jun 30 2014 Miroslav Grepl <mgrepl@redhat.com> - 2.0.94-5.8
 - avc_has_perm will now return yes if the machine is in permissive mode
 Resolves:#753675
