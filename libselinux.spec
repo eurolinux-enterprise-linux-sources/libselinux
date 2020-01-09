@@ -5,7 +5,7 @@
 Summary: SELinux library and simple utilities
 Name: libselinux
 Version: 2.0.94
-Release: 5.2%{?dist}
+Release: 5.3%{?dist}
 License: Public Domain
 Group: System Environment/Libraries
 Source: http://www.nsa.gov/research/selinux/%{name}-%{version}.tgz
@@ -17,6 +17,7 @@ Patch4: libselinux-2.0.94_init.patch
 Patch5: libselinux-2.0.94_realpath.patch
 Patch6: libselinux-2.0.94_user.patch
 Patch7: libselinux-2.0.94_checkgroup.patch
+Patch8: libselinux-2.0.94_eintr.patch
 URL: http://www.selinuxproject.org
 
 BuildRequires: python-devel ruby-devel ruby libsepol-static >= %{libsepolver} swig
@@ -94,6 +95,7 @@ needed for developing SELinux applications.
 %patch5 -p1 -b .realpath
 %patch6 -p1 -b .user
 %patch7 -p2 -b .checkgroup
+%patch8 -p1 -b .eintr
 
 %build
 make clean
@@ -180,6 +182,10 @@ exit 0
 %{ruby_sitearch}/selinux.so
 
 %changelog
+* Fri Feb 3 2012 Dan Walsh <dwalsh@redhat.com> - 2..0.94-5.3
+- avc_netlink_recieve should continue to poll if it receinves an EINTR rather 
+Resolves: #717147
+
 * Mon Oct 24 2011 Dan Walsh <dwalsh@redhat.com> - 2.0.94-5.2
 - Apply libselinux patch to handle large groups.
 Resolves: #748471
