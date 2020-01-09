@@ -5,7 +5,7 @@
 Summary: SELinux library and simple utilities
 Name: libselinux
 Version: 2.0.94
-Release: 5.3%{?dist}.1
+Release: 5.8%{?dist}
 License: Public Domain
 Group: System Environment/Libraries
 Source: http://www.nsa.gov/research/selinux/%{name}-%{version}.tgz
@@ -19,6 +19,11 @@ Patch6: libselinux-2.0.94_user.patch
 Patch7: libselinux-2.0.94_checkgroup.patch
 Patch8: libselinux-2.0.94_eintr.patch
 Patch9: libselinux-2.0.94_substitutions.patch
+Patch10: libselinux-2.0.94_enabled.patch
+Patch11: libselinux-2.0.94_rhel6.6.patch
+Patch12: libselinux-2.0.94-1091857.patch
+Patch13: libselinux-2.0.94-1025507.patch
+Patch14: libselinux-2.0.94-753675.patch
 URL: http://www.selinuxproject.org
 
 BuildRequires: python-devel ruby-devel ruby libsepol-static >= %{libsepolver} swig
@@ -98,7 +103,11 @@ needed for developing SELinux applications.
 %patch7 -p2 -b .checkgroup
 %patch8 -p1 -b .eintr
 %patch9 -p1 -b .substitutions
-
+%patch10 -p1 -b .enabled
+%patch11 -p2 -b .rhel6.6
+%patch12 -p2 -b .1091857
+%patch13 -p2 -b .1025507
+%patch14 -p2 -b .753675
 %build
 make clean
 make LIBDIR="%{_libdir}" CFLAGS="-g %{optflags}" %{?_smp_mflags} swigify
@@ -184,15 +193,33 @@ exit 0
 %{ruby_sitearch}/selinux.so
 
 %changelog
-* Tue May 7 2013 Miroslav Grepl <mgrepl@redhat.com> - 2..0.94-5.3.el6_4.1
-- Fix patch that Handles substitutions for /
-Resolves:#956983
+* Mon Jun 30 2014 Miroslav Grepl <mgrepl@redhat.com> - 2.0.94-5.8
+- avc_has_perm will now return yes if the machine is in permissive mode
+Resolves:#753675
+- nscd permission support for netgroup
+- Fix matchpathcon verify handling to fail on non-existing objects
 
-* Thu May 1 2013 Miroslav Grepl <mgrepl@redhat.com> - 2..0.94-5.3.el6_4
+* Tue Jun 10 2014 Miroslav Grepl <mgrepl@redhat.com> - 2.0.94-5.7
+- Fix selinuxdefcon to print end of line at the end of output.
+Resolves:#913115
+- Fix security_get_initial_context desc in security_compute_av.3
+Resolves:#1011109
+- Apply fix for selinux.8 man page from pschiffe@redhat.com.
+Resolves:#1011145
+
+* Mon May 12 2014 Dan Walsh <dwalsh@redhat.com> - 2.0.94-5.6
+- Back port handling of is_selinux_enabled form rhel7. We need is_selinux_enabled() to report disabled in a docker container so that SELinux aware applications do not attempt to do SELinux activities.
+Resolves: #1096816
+
+* Tue May 7 2013 Miroslav Grepl <mgrepl@redhat.com> - 2.0.94-5.5
+Fix patch that Handles substitutions for /
+Resolves:#953947
+
+* Thu Apr 25 2013 Miroslav Grepl <mgrepl@redhat.com> - 2.0.94-5.4
 - Handle substitutions for /
-Resolves:#956983
+Resolves:#953947
 
-* Fri Feb 3 2012 Dan Walsh <dwalsh@redhat.com> - 2..0.94-5.3
+* Fri Feb 3 2012 Dan Walsh <dwalsh@redhat.com> - 2.0.94-5.3
 - avc_netlink_recieve should continue to poll if it receinves an EINTR rather 
 Resolves: #717147
 
