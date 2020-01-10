@@ -1,27 +1,31 @@
-%global with_python3 0
+%if 0%{?fedora} > 12
+%global with_python3 1
+%endif
 
 %define ruby_inc %(pkg-config --cflags ruby)
 %define ruby_sitearch %(ruby -rrbconfig -e "puts RbConfig::CONFIG['vendorarchdir']")
-%define libsepolver 2.1.9-1
+%define libsepolver 2.5-6
 %{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Summary: SELinux library and simple utilities
 Name: libselinux
-Version: 2.2.2
-Release: 6%{?dist}
+Version: 2.5
+Release: 11%{?dist}
 License: Public Domain
 Group: System Environment/Libraries
-Source: %{name}-%{version}.tgz
+# https://github.com/SELinuxProject/selinux/wiki/Releases
+Source: https://raw.githubusercontent.com/wiki/SELinuxProject/selinux/files/releases/20160223/libselinux-2.5.tar.gz
 Source1: selinuxconlist.8
 Source2: selinuxdefcon.8
-Url: http://oss.tresys.com/git/selinux.git
-Patch1: libselinux-rhat.patch
-BuildRequires: pkgconfig python-devel ruby-devel ruby libsepol-static >= %{libsepolver} swig pcre-devel xz-devel
+Url: https://github.com/SELinuxProject/selinux/wiki
+# HEAD fac9844438fe495bd100dda199d2ed76b0003bfe
+Patch1: libselinux-rhel.patch
+BuildRequires: pkgconfig python python-devel ruby-devel ruby libsepol-static >= %{libsepolver} swig pcre-devel xz-devel
 %if 0%{?with_python3}
-BuildRequires: python3-devel
+BuildRequires: python3 python3-devel
 %endif # if with_python3
-Requires: libsepol >= %{libsepolver} pcre
-Conflicts: filesystem < 3
+Requires: libsepol%{?_isa} >= %{libsepolver} pcre
+Conflicts: filesystem < 3 systemd < 219-20
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
@@ -42,7 +46,7 @@ decisions.  Required for any applications that use the SELinux API.
 %package utils
 Summary: SELinux libselinux utilies
 Group: Development/Libraries
-Requires: libselinux = %{version}-%{release} 
+Requires: libselinux%{?_isa} = %{version}-%{release}
 
 %description utils
 The libselinux-utils package contains the utilities
@@ -50,7 +54,7 @@ The libselinux-utils package contains the utilities
 %package python
 Summary: SELinux python bindings for libselinux
 Group: Development/Libraries
-Requires: libselinux = %{version}-%{release} 
+Requires: libselinux%{?_isa} = %{version}-%{release}
 
 %description python
 The libselinux-python package contains the python bindings for developing 
@@ -60,7 +64,7 @@ SELinux applications.
 %package python3
 Summary: SELinux python 3 bindings for libselinux
 Group: Development/Libraries
-Requires: libselinux = %{version}-%{release} 
+Requires: libselinux%{?_isa} = %{version}-%{release}
 
 %description python3
 The libselinux-python3 package contains python 3 bindings for developing
@@ -70,7 +74,7 @@ SELinux applications.
 %package ruby
 Summary: SELinux ruby bindings for libselinux
 Group: Development/Libraries
-Requires: libselinux = %{version}-%{release} 
+Requires: libselinux%{?_isa} = %{version}-%{release}
 Provides: ruby(selinux)
 
 %description ruby
@@ -80,8 +84,8 @@ SELinux applications.
 %package devel
 Summary: Header files and libraries used to build SELinux
 Group: Development/Libraries
-Requires: libselinux = %{version}-%{release} 
-Requires: libsepol-devel >= %{libsepolver}
+Requires: libselinux%{?_isa} = %{version}-%{release}
+Requires: libsepol-devel%{?_isa} >= %{libsepolver}
 
 %description devel
 The libselinux-devel package contains the libraries and header files
@@ -90,17 +94,20 @@ needed for developing SELinux applications.
 %package static
 Summary: Static libraries used to build SELinux
 Group: Development/Libraries
-Requires: libselinux-devel = %{version}-%{release}
+Requires: libselinux-devel%{?_isa} = %{version}-%{release}
 
 %description static
 The libselinux-static package contains the static libraries
 needed for developing SELinux applications. 
 
 %prep
-%setup -q
-%patch1 -p2 -b .rhat
+%setup -q -n libselinux-2.5
+%patch1 -p1 -b .rhel
 
 %build
+export LDFLAGS="%{?__global_ldflags}"
+# FIXME: export DISABLE_RPM="y"
+
 # To support building the Python wrapper against multiple Python runtimes
 # Define a function, for how to perform a "build" of the python wrapper against
 # a specific runtime:
@@ -155,7 +162,7 @@ InstallPythonWrapper %{__python}
 InstallPythonWrapper %{__python3}
 %endif # with_python3
 
-make DESTDIR="%{buildroot}" LIBDIR="%{buildroot}%{_libdir}" SHLIBDIR="%{buildroot}%{_libdir}" BINDIR="%{buildroot}%{_bindir}" SBINDIR="%{buildroot}%{_sbindir}" RUBYINSTALL=%{buildroot}%{ruby_sitearch} install install-rubywrap
+make DESTDIR="%{buildroot}" LIBDIR="%{buildroot}%{_libdir}" SHLIBDIR="%{buildroot}%{_libdir}" BINDIR="%{buildroot}%{_bindir}" SBINDIR="%{buildroot}%{_sbindir}" RUBYINSTALL=%{buildroot}%{ruby_vendorarchdir} install install-rubywrap
 
 # Nuke the files we don't want to distribute
 rm -f %{buildroot}%{_sbindir}/compute_*
@@ -204,6 +211,11 @@ rm -rf %{buildroot}
 %{_sbindir}/selinuxexeccon
 %{_sbindir}/selinuxenabled
 %{_sbindir}/setenforce
+%{_sbindir}/selabel_digest
+%{_sbindir}/selabel_lookup
+%{_sbindir}/selabel_lookup_best_match
+%{_sbindir}/selabel_partial_match
+%{_sbindir}/selinux_restorecon
 %{_mandir}/man5/*
 %{_mandir}/man8/*
 
@@ -211,9 +223,9 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %{_libdir}/libselinux.so
 %{_libdir}/pkgconfig/libselinux.pc
-%dir %{_includedir}/selinux
 %dir %{_libdir}/golang/src/pkg/github.com/selinux
 %{_libdir}/golang/src/pkg/github.com/selinux/selinux.go
+%dir %{_includedir}/selinux
 %{_includedir}/selinux/*
 %{_mandir}/man3/*
 
@@ -238,9 +250,56 @@ rm -rf %{buildroot}
 
 %files ruby
 %defattr(-,root,root,-)
-%{ruby_sitearch}/selinux.so
+%{ruby_vendorarchdir}/selinux.so
 
 %changelog
+* Thu Mar 23 2017 Petr Lautrbach <plautrba@redhat.com> - 2.5-11
+- Fix audit2why.init error reporting (#1435139)
+
+* Tue Mar 14 2017 Petr Lautrbach <plautrba@redhat.com> - 2.5-10
+- Add missing av_permission values (#1025931)
+- Set an appropriate errno in booleans.c (#1402140)
+- Change matchpathcon usage to match with matchpathcon manpage (#1412797)
+
+* Tue Feb 21 2017 Petr Lautrbach <plautrba@redhat.com> - 2.5-9
+- Fix pointer handling in realpath_not_final (#1404644)
+
+* Fri Jan 20 2017 Vit Mojzis <vmojzis@redhat.com> - 2.5-8
+- selinux_restorecon: fix realpath logic (#1386498)
+
+* Thu Jan 05 2017 Petr Lautrbach <plautrba@redhat.com> - 2.5-7
+- Keep recursing if matchpathcon returns ENOENT (#1406520)
+
+* Fri Aug 26 2016 Petr Lautrbach <plautrba@redhat.com> 2.5-6
+- Handle NULL pcre study data
+
+* Wed Aug 10 2016 Petr Lautrbach <plautrba@redhat.com> 2.5-5
+- Fix in tree compilation of utils that depend on libsepol
+
+* Mon Jun 27 2016 Petr Lautrbach <plautrba@redhat.com> - 2.5-4
+- Clarify is_selinux_mls_enabled() description
+- Explain how to free policy type from selinux_getpolicytype()
+- Compare absolute pathname in matchpathcon -V
+- Add selinux_snapperd_contexts_path()
+- Modify audit2why analyze function to use loaded policy
+- Sort object files for deterministic linking order
+- Respect CC and PKG_CONFIG environment variable
+- Avoid mounting /proc outside of selinux_init_load_policy()
+- Fix multiple spelling errors
+
+* Wed Apr 27 2016 Petr Lautrbach <plautrba@redhat.com> - 2.5-3
+- Fix setexecfilecon() to work better in a chroot (#1329931)
+- Fix typo in sefcontext_compile.8 (#1320062)
+
+* Mon Apr 11 2016 Petr Lautrbach <plautrba@redhat.com> - 2.5-2
+- Fix location of selinuxfs mount point (#1321086)
+- Only mount /proc if necessary
+- procattr: return einval for <= 0 pid args
+- procattr: return error on invalid pid_t inpu
+
+* Tue Feb 23 2016 Petr Lautrbach <plautrba@redhat.com> 2.5-1
+- Update to upstream release 2016-02-23
+
 * Fri Feb 14 2014 Dan Walsh <dwalsh@redhat.com>  - 2.2.2-6
 - Add additional go bindings for get*con calls
 - Add go bindings test command
