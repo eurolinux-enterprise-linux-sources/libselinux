@@ -4,13 +4,13 @@
 
 %define ruby_inc %(pkg-config --cflags ruby)
 %define ruby_sitearch %(ruby -rrbconfig -e "puts RbConfig::CONFIG['vendorarchdir']")
-%define libsepolver 2.5-6
+%define libsepolver 2.5-10
 %{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Summary: SELinux library and simple utilities
 Name: libselinux
 Version: 2.5
-Release: 12%{?dist}
+Release: 14.1%{?dist}
 License: Public Domain
 Group: System Environment/Libraries
 # https://github.com/SELinuxProject/selinux/wiki/Releases
@@ -18,14 +18,16 @@ Source: https://raw.githubusercontent.com/wiki/SELinuxProject/selinux/files/rele
 Source1: selinuxconlist.8
 Source2: selinuxdefcon.8
 Url: https://github.com/SELinuxProject/selinux/wiki
-# HEAD fac9844438fe495bd100dda199d2ed76b0003bfe
+# HEAD 0713edcc60b6c9e487f149af8ecc66206c9274b6
 Patch1: libselinux-rhel.patch
 BuildRequires: pkgconfig python python-devel ruby-devel ruby libsepol-static >= %{libsepolver} swig pcre-devel xz-devel
 %if 0%{?with_python3}
 BuildRequires: python3 python3-devel
 %endif # if with_python3
 Requires: libsepol%{?_isa} >= %{libsepolver} pcre
-Conflicts: filesystem < 3 systemd < 219-20
+Conflicts: filesystem < 3
+Conflicts: selinux-policy-base < 3.13.1-66
+Conflicts: systemd < 219-20
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
@@ -253,6 +255,12 @@ rm -rf %{buildroot}
 %{ruby_vendorarchdir}/selinux.so
 
 %changelog
+* Wed Jul 25 2018 Vit Mojzis <vmojzis@redhat.com> - 2.5-14.1
+- Add conflict with selinux policy from before store migration (#1469571)
+
+* Mon Apr 30 2018 Vit Mojzis <vmojzis@redhat.com> - 2.5-13
+- Correct manpages regarding removable_context (#1395621)
+
 * Tue Oct 17 2017 Vit Mojzis <vmojzis@redhat.com> - 2.5-12
 - Improve getfilecon man page (#1258513)
 
