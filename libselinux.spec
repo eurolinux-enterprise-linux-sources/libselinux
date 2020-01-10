@@ -4,13 +4,13 @@
 
 %define ruby_inc %(pkg-config --cflags ruby)
 %define ruby_sitearch %(ruby -rrbconfig -e "puts RbConfig::CONFIG['vendorarchdir']")
-%define libsepolver 2.5-10
+%define libsepolver 2.5-6
 %{!?python_sitearch: %define python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib(1)")}
 
 Summary: SELinux library and simple utilities
 Name: libselinux
 Version: 2.5
-Release: 14.1%{?dist}
+Release: 6%{?dist}
 License: Public Domain
 Group: System Environment/Libraries
 # https://github.com/SELinuxProject/selinux/wiki/Releases
@@ -18,16 +18,14 @@ Source: https://raw.githubusercontent.com/wiki/SELinuxProject/selinux/files/rele
 Source1: selinuxconlist.8
 Source2: selinuxdefcon.8
 Url: https://github.com/SELinuxProject/selinux/wiki
-# HEAD 0713edcc60b6c9e487f149af8ecc66206c9274b6
+# HEAD 95ce251a24e80e884c69771a497589323be2223c
 Patch1: libselinux-rhel.patch
 BuildRequires: pkgconfig python python-devel ruby-devel ruby libsepol-static >= %{libsepolver} swig pcre-devel xz-devel
 %if 0%{?with_python3}
 BuildRequires: python3 python3-devel
 %endif # if with_python3
 Requires: libsepol%{?_isa} >= %{libsepolver} pcre
-Conflicts: filesystem < 3
-Conflicts: selinux-policy-base < 3.13.1-66
-Conflicts: systemd < 219-20
+Conflicts: filesystem < 3 systemd < 219-20
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 %description
@@ -255,32 +253,6 @@ rm -rf %{buildroot}
 %{ruby_vendorarchdir}/selinux.so
 
 %changelog
-* Wed Jul 25 2018 Vit Mojzis <vmojzis@redhat.com> - 2.5-14.1
-- Add conflict with selinux policy from before store migration (#1469571)
-
-* Mon Apr 30 2018 Vit Mojzis <vmojzis@redhat.com> - 2.5-13
-- Correct manpages regarding removable_context (#1395621)
-
-* Tue Oct 17 2017 Vit Mojzis <vmojzis@redhat.com> - 2.5-12
-- Improve getfilecon man page (#1258513)
-
-* Thu Mar 23 2017 Petr Lautrbach <plautrba@redhat.com> - 2.5-11
-- Fix audit2why.init error reporting (#1435139)
-
-* Tue Mar 14 2017 Petr Lautrbach <plautrba@redhat.com> - 2.5-10
-- Add missing av_permission values (#1025931)
-- Set an appropriate errno in booleans.c (#1402140)
-- Change matchpathcon usage to match with matchpathcon manpage (#1412797)
-
-* Tue Feb 21 2017 Petr Lautrbach <plautrba@redhat.com> - 2.5-9
-- Fix pointer handling in realpath_not_final (#1404644)
-
-* Fri Jan 20 2017 Vit Mojzis <vmojzis@redhat.com> - 2.5-8
-- selinux_restorecon: fix realpath logic (#1386498)
-
-* Thu Jan 05 2017 Petr Lautrbach <plautrba@redhat.com> - 2.5-7
-- Keep recursing if matchpathcon returns ENOENT (#1406520)
-
 * Fri Aug 26 2016 Petr Lautrbach <plautrba@redhat.com> 2.5-6
 - Handle NULL pcre study data
 

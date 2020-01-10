@@ -494,19 +494,6 @@ index 0000000..fed6de8
 +func main() {
 +	selinux.Test()
 +}
-diff --git libselinux-2.5/include/selinux/av_permissions.h libselinux-2.5/include/selinux/av_permissions.h
-index c1269af..631f027 100644
---- libselinux-2.5/include/selinux/av_permissions.h
-+++ libselinux-2.5/include/selinux/av_permissions.h
-@@ -876,6 +876,8 @@
- #define NSCD__SHMEMHOST                           0x00000080UL
- #define NSCD__GETSERV                             0x00000100UL
- #define NSCD__SHMEMSERV                           0x00000200UL
-+#define NSCD__GETNETGRP                           0x00000400UL
-+#define NSCD__SHMEMNETGRP                         0x00000800UL
- #define ASSOCIATION__SENDTO                       0x00000001UL
- #define ASSOCIATION__RECVFROM                     0x00000002UL
- #define ASSOCIATION__SETCONTEXT                   0x00000004UL
 diff --git libselinux-2.5/include/selinux/selinux.h libselinux-2.5/include/selinux/selinux.h
 index 2262086..3d8673f 100644
 --- libselinux-2.5/include/selinux/selinux.h
@@ -554,22 +541,6 @@ index 7353952..3e9fca8 100644
  .I errno
  is set appropriately.
  
-diff --git libselinux-2.5/man/man3/getfilecon.3 libselinux-2.5/man/man3/getfilecon.3
-index 5bb575b..ec02866 100644
---- libselinux-2.5/man/man3/getfilecon.3
-+++ libselinux-2.5/man/man3/getfilecon.3
-@@ -20,7 +20,10 @@ getfilecon, fgetfilecon, lgetfilecon \- get SELinux security context of a file
- .SH "DESCRIPTION"
- .BR getfilecon ()
- retrieves the context associated with the given path in the file system, the
--length of the context is returned.
-+length of the context is returned. The context should not be used in
-+selinux_access_check as this function can return a cached value, which is not
-+suitable for access checking. It should only be used to print translated value
-+to the user.
- 
- .BR lgetfilecon ()
- is identical to
 diff --git libselinux-2.5/man/man3/is_selinux_enabled.3 libselinux-2.5/man/man3/is_selinux_enabled.3
 index f02052c..df62c22 100644
 --- libselinux-2.5/man/man3/is_selinux_enabled.3
@@ -645,45 +616,6 @@ index f779dd9..2d44be5 100644
  and
  .BR mmap (2)
  it in read-only mode. The file-descriptor and pointer to the page shall
-diff --git libselinux-2.5/man/man5/removable_context.5 libselinux-2.5/man/man5/removable_context.5
-index 60aaa93..f16e8bd 100644
---- libselinux-2.5/man/man5/removable_context.5
-+++ libselinux-2.5/man/man5/removable_context.5
-@@ -3,8 +3,7 @@
- removable_context \- The SELinux removable devices context configuration file
- .
- .SH "DESCRIPTION"
--This file contains the default label that should be used for removable devices that are not defined in the \fImedia\fR file (that is described in
--.BR selabel_media "(5)). "
-+This file contains the default label that should be used for removable devices.
- .sp
- .BR selinux_removable_context_path "(3) "
- will return the active policy path to this file. The default removable context file is:
-@@ -34,4 +33,4 @@ A user, role, type and optional range (for MCS/MLS) separated by colons (:) that
- system_u:object_r:removable_t:s0
- .
- .SH "SEE ALSO"
--.BR selinux "(8), " selinux_removable_context_path "(3), " selabel_media "(5), " selinux_config "(5) "
-+.BR selinux "(8), " selinux_removable_context_path "(3), " selinux_config "(5) "
-diff --git libselinux-2.5/man/man5/selabel_media.5 libselinux-2.5/man/man5/selabel_media.5
-index 395ed0e..b7c28e3 100644
---- libselinux-2.5/man/man5/selabel_media.5
-+++ libselinux-2.5/man/man5/selabel_media.5
-@@ -52,8 +52,6 @@ The default media contexts file is:
- .RE
- .sp
- Where \fI{SELINUXTYPE}\fR is the entry from the selinux configuration file \fIconfig\fR (see \fBselinux_config\fR(5)).
--.sp
--Should there not be a valid entry in the \fImedia\fR file, then the default \fIremovable_context\fR file will be read (see \fBremovable_context\fR(5)).
- .
- .SH "FILE FORMAT"
- Each line within the \fImedia\fR file is as follows:
-@@ -90,4 +88,4 @@ this is not set, then it is possible for an invalid context to be returned.
- .SH "SEE ALSO"
- .ad l
- .nh
--.BR selinux "(8), " selabel_open "(3), " selabel_lookup "(3), " selabel_stats "(3), " selabel_close "(3), " selinux_set_callback "(3), " selinux_media_context_path "(3), " freecon "(3), " selinux_config "(5), " removable_context "(5) "
-+.BR selinux "(8), " selabel_open "(3), " selabel_lookup "(3), " selabel_stats "(3), " selabel_close "(3), " selinux_set_callback "(3), " selinux_media_context_path "(3), " freecon "(3), " selinux_config "(5) "
 diff --git libselinux-2.5/man/man8/avcstat.8 libselinux-2.5/man/man8/avcstat.8
 index 204687d..2c4bce1 100644
 --- libselinux-2.5/man/man8/avcstat.8
@@ -774,98 +706,10 @@ index d0021ae..d94163e 100644
  MAX_STACK_SIZE=32768
  
 diff --git libselinux-2.5/src/audit2why.c libselinux-2.5/src/audit2why.c
-index 12745b3..7aca3f0 100644
+index 12745b3..abe1701 100644
 --- libselinux-2.5/src/audit2why.c
 +++ libselinux-2.5/src/audit2why.c
-@@ -206,7 +206,7 @@ static int __policy_init(const char *init_path)
- 				 "unable to open %s:  %s\n",
- 				 path, strerror(errno));
- 			PyErr_SetString( PyExc_ValueError, errormsg);
--			return 1;
-+			return -1;
- 		}
- 	} else {
- 		const char *curpolicy = selinux_current_policy_path();
-@@ -215,7 +215,7 @@ static int __policy_init(const char *init_path)
- 			snprintf(errormsg, sizeof(errormsg),
- 				 "You must specify the -p option with the path to the policy file.\n");
- 			PyErr_SetString( PyExc_ValueError, errormsg);
--			return 1;
-+			return -1;
- 		}
- 		fp = fopen(curpolicy, "r");
- 		if (!fp) {
-@@ -224,7 +224,7 @@ static int __policy_init(const char *init_path)
- 				 curpolicy,
- 				 strerror(errno));
- 			PyErr_SetString( PyExc_ValueError, errormsg);
--			return 1;
-+			return -1;
- 		}
- 	}
- 
-@@ -232,7 +232,7 @@ static int __policy_init(const char *init_path)
- 	if (!avc) {
- 		PyErr_SetString( PyExc_MemoryError, "Out of memory\n");
- 		fclose(fp);
--		return 1;
-+		return -1;
- 	}
- 
- 	/* Set up a policydb directly so that we can mutate it later
-@@ -244,7 +244,7 @@ static int __policy_init(const char *init_path)
- 			 "policydb_init failed: %s\n", strerror(errno));
- 		PyErr_SetString( PyExc_RuntimeError, errormsg);
- 		fclose(fp);
--		return 1;
-+		return -1;
- 	}
- 	sepol_policy_file_set_fp(pf, fp);	
- 	if (sepol_policydb_read(avc->policydb, pf)) {
-@@ -252,7 +252,7 @@ static int __policy_init(const char *init_path)
- 			 "invalid binary policy %s\n", path);
- 		PyErr_SetString( PyExc_ValueError, errormsg);
- 		fclose(fp);
--		return 1;
-+		return -1;
- 	}
- 	fclose(fp);
- 	sepol_set_policydb(&avc->policydb->p);
-@@ -264,13 +264,13 @@ static int __policy_init(const char *init_path)
- 			      avc->policydb, &cnt);
- 	if (rc < 0) {
- 		PyErr_SetString( PyExc_RuntimeError, "unable to get bool count\n");
--		return 1;
-+		return -1;
- 	}
- 
- 	boollist = calloc(cnt, sizeof(*boollist));
- 	if (!boollist) {
- 		PyErr_SetString( PyExc_MemoryError, "Out of memory\n");
--		return 1;
-+		return -1;
- 	}
- 
- 	sepol_bool_iterate(avc->handle, avc->policydb,
-@@ -282,7 +282,7 @@ static int __policy_init(const char *init_path)
- 	if (rc < 0) {
- 		PyErr_SetString( PyExc_RuntimeError, "unable to init sidtab\n");
- 		free(boollist);
--		return 1;
-+		return -1;
- 	}
- 	sepol_set_sidtab(&sidtab);
- 	return 0;
-@@ -298,6 +298,8 @@ static PyObject *init(PyObject *self __attribute__((unused)), PyObject *args) {
-   if (!PyArg_ParseTuple(args,(char *)"|s:policy_init",&init_path))
-     return NULL;
-   result = __policy_init(init_path);
-+  if (result == -1)
-+    return NULL;
-   return Py_BuildValue("i", result);
- }
- 
-@@ -343,8 +345,8 @@ static PyObject *analyze(PyObject *self __attribute__((unused)) , PyObject *args
+@@ -343,8 +343,8 @@ static PyObject *analyze(PyObject *self __attribute__((unused)) , PyObject *args
  	if (rc < 0)
  		RETURN(BADTCON)
  
@@ -876,7 +720,7 @@ index 12745b3..7aca3f0 100644
  		RETURN(BADTCLASS)
  
  	/* Convert the permission list to an AV. */
-@@ -365,8 +367,8 @@ static PyObject *analyze(PyObject *self __attribute__((unused)) , PyObject *args
+@@ -365,8 +365,8 @@ static PyObject *analyze(PyObject *self __attribute__((unused)) , PyObject *args
  		permstr = PyString_AsString( strObj );
  #endif
  		
@@ -902,18 +746,6 @@ index 9669264..c775430 100644
 +
  	*sid = NULL;
  	hvalue = sidtab_hash(ctx);
- 
-diff --git libselinux-2.5/src/booleans.c libselinux-2.5/src/booleans.c
-index 4b39a28..6a96b4a 100644
---- libselinux-2.5/src/booleans.c
-+++ libselinux-2.5/src/booleans.c
-@@ -53,6 +53,7 @@ int security_get_boolean_names(char ***names, int *len)
- 	snprintf(path, sizeof path, "%s%s", selinux_mnt, SELINUX_BOOL_DIR);
- 	*len = scandir(path, &namelist, &filename_select, alphasort);
- 	if (*len <= 0) {
-+		errno = ENOENT;
- 		return -1;
- 	}
  
 diff --git libselinux-2.5/src/canonicalize_context.c libselinux-2.5/src/canonicalize_context.c
 index 7cf3139..364a746 100644
@@ -1244,7 +1076,7 @@ index 1d3b28a..ea6d70b 100644
  		char * ccontext = NULL;
  		int err = errno;
 diff --git libselinux-2.5/src/matchpathcon.c libselinux-2.5/src/matchpathcon.c
-index 5b495a0..d92ed79 100644
+index 5b495a0..a2f2c3e 100644
 --- libselinux-2.5/src/matchpathcon.c
 +++ libselinux-2.5/src/matchpathcon.c
 @@ -2,6 +2,7 @@
@@ -1264,20 +1096,7 @@ index 5b495a0..d92ed79 100644
  	va_end(ap);
  }
  
-@@ -361,12 +362,6 @@ int realpath_not_final(const char *name, char *resolved_path)
- 		goto out;
- 	}
- 
--	/* strip leading // */
--	while (tmp_path[len] && tmp_path[len] == '/' &&
--	       tmp_path[len+1] && tmp_path[len+1] == '/') {
--		tmp_path++;
--		len++;
--	}
- 	last_component = strrchr(tmp_path, '/');
- 
- 	if (last_component == tmp_path) {
-@@ -470,6 +465,17 @@ int selinux_file_context_verify(const char *path, mode_t mode)
+@@ -470,6 +471,17 @@ int selinux_file_context_verify(const char *path, mode_t mode)
  	char * con = NULL;
  	char * fcontext = NULL;
  	int rc = 0;
@@ -1385,76 +1204,6 @@ index 46566f6..9b9145c 100644
      hidden_proto(selinux_systemd_contexts_path)
      hidden_proto(selinux_path)
      hidden_proto(selinux_check_passwd_access)
-diff --git libselinux-2.5/src/selinux_restorecon.c libselinux-2.5/src/selinux_restorecon.c
-index 17ed6fe..d2c2402 100644
---- libselinux-2.5/src/selinux_restorecon.c
-+++ libselinux-2.5/src/selinux_restorecon.c
-@@ -245,25 +245,41 @@ int selinux_restorecon(const char *pathname_orig,
- 	 * realpath of containing dir, then appending last component name.
- 	 */
- 	if (userealpath) {
--		pathbname = basename((char *)pathname_orig);
-+		char *basename_cpy = strdup(pathname_orig);
-+		if (!basename_cpy)
-+			goto realpatherr;
-+		pathbname = basename(basename_cpy);
- 		if (!strcmp(pathbname, "/") || !strcmp(pathbname, ".") ||
- 					    !strcmp(pathbname, "..")) {
- 			pathname = realpath(pathname_orig, NULL);
--			if (!pathname)
-+			if (!pathname) {
-+				free(basename_cpy);
- 				goto realpatherr;
-+			}
- 		} else {
--			pathdname = dirname((char *)pathname_orig);
-+			char *dirname_cpy = strdup(pathname_orig);
-+			if (!dirname_cpy) {
-+				free(basename_cpy);
-+				goto realpatherr;
-+			}
-+			pathdname = dirname(dirname_cpy);
- 			pathdnamer = realpath(pathdname, NULL);
--			if (!pathdnamer)
-+			free(dirname_cpy);
-+			if (!pathdnamer) {
-+				free(basename_cpy);
- 				goto realpatherr;
-+			}
- 			if (!strcmp(pathdnamer, "/"))
- 				error = asprintf(&pathname, "/%s", pathbname);
- 			else
- 				error = asprintf(&pathname, "%s/%s",
- 						    pathdnamer, pathbname);
--			if (error < 0)
-+			if (error < 0) {
-+				free(basename_cpy);
- 				goto oom;
-+			}
- 		}
-+		free(basename_cpy);
- 	} else {
- 		pathname = strdup(pathname_orig);
- 		if (!pathname)
-diff --git libselinux-2.5/src/selinuxswig_python.i libselinux-2.5/src/selinuxswig_python.i
-index 8cea18d..592d70c 100644
---- libselinux-2.5/src/selinuxswig_python.i
-+++ libselinux-2.5/src/selinuxswig_python.i
-@@ -23,7 +23,13 @@ def restorecon(path, recursive=False):
-     except OSError:
-         path = os.path.realpath(os.path.expanduser(path))
-         mode = os.lstat(path)[stat.ST_MODE]
--        status, context = matchpathcon(path, mode)
-+        try:
-+            status, context = matchpathcon(path, mode)
-+        except OSError as e:
-+            # matchpathcon returns ENOENT when <<none>> in file context
-+            if e.errno != errno.ENOENT:
-+                raise
-+            return
- 
-     if status == 0:
-         try:
 diff --git libselinux-2.5/src/setexecfilecon.c libselinux-2.5/src/setexecfilecon.c
 index e72ba0d..9c821f8 100644
 --- libselinux-2.5/src/setexecfilecon.c
@@ -1525,19 +1274,6 @@ index cf7af52..8497cb4 100644
  LDLIBS += -L../src -lselinux -L$(LIBDIR)
  
  TARGETS=$(patsubst %.c,%,$(wildcard *.c))
-diff --git libselinux-2.5/utils/matchpathcon.c libselinux-2.5/utils/matchpathcon.c
-index d1f1348..0288feb 100644
---- libselinux-2.5/utils/matchpathcon.c
-+++ libselinux-2.5/utils/matchpathcon.c
-@@ -15,7 +15,7 @@
- static void usage(const char *progname)
- {
- 	fprintf(stderr,
--		"usage:  %s [-N] [-n] [-f file_contexts] [ -P policy_root_path ] [-p prefix] [-Vq] path...\n",
-+		"usage:  %s [-V] [-N] [-n] [-m type] [-f file_contexts_file] [-p prefix] [-P policy_root_path] filepath...\n",
- 		progname);
- 	exit(1);
- }
 diff --git libselinux-2.5/utils/sefcontext_compile.c libselinux-2.5/utils/sefcontext_compile.c
 index d2578b6..fd6fb78 100644
 --- libselinux-2.5/utils/sefcontext_compile.c
