@@ -10,7 +10,7 @@
 Summary: SELinux library and simple utilities
 Name: libselinux
 Version: 2.5
-Release: 11%{?dist}
+Release: 12%{?dist}
 License: Public Domain
 Group: System Environment/Libraries
 # https://github.com/SELinuxProject/selinux/wiki/Releases
@@ -253,6 +253,9 @@ rm -rf %{buildroot}
 %{ruby_vendorarchdir}/selinux.so
 
 %changelog
+* Tue Oct 17 2017 Vit Mojzis <vmojzis@redhat.com> - 2.5-12
+- Improve getfilecon man page (#1258513)
+
 * Thu Mar 23 2017 Petr Lautrbach <plautrba@redhat.com> - 2.5-11
 - Fix audit2why.init error reporting (#1435139)
 
